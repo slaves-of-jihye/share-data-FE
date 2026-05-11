@@ -1,5 +1,6 @@
-import { createContext, useReducer, useCallback } from 'react';
+import { createContext, useReducer, useCallback, useContext, useEffect } from 'react';
 import { deadlineService } from '../services/deadlineService';
+import { AuthContext } from './AuthContext';
 
 export const DeadlineContext = createContext(null);
 
@@ -32,6 +33,14 @@ function deadlineReducer(state, action) {
         isLoading: false,
       };
     }
+    case 'REMOVE_DEADLINE':
+      return {
+        ...state,
+        deadlines: state.deadlines.filter((d) => d.id !== action.payload),
+        upcomingDeadlines: state.upcomingDeadlines.filter((d) => d.id !== action.payload),
+      };
+    case 'CLEAR':
+      return initialState;
     case 'SET_ERROR':
       return { ...state, error: action.payload, isLoading: false };
     default:
@@ -41,6 +50,19 @@ function deadlineReducer(state, action) {
 
 export function DeadlineProvider({ children }) {
   const [state, dispatch] = useReducer(deadlineReducer, initialState);
+  const { user, isLoading: authLoading } = useContext(AuthContext);
+
+  // 로그인 시 자동 로드, 로그아웃 시 초기화
+  useEffect(() => {
+    if (authLoading) return;
+    if (user) {
+      loadDeadlines();
+      loadUpcoming(3);
+    } else {
+      dispatch({ type: 'CLEAR' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading]);
 
   const loadDeadlines = useCallback(async () => {
     dispatch({ type: 'SET_LOADING' });
@@ -66,6 +88,9 @@ export function DeadlineProvider({ children }) {
     try {
       const deadline = await deadlineService.create(data);
       dispatch({ type: 'ADD_DEADLINE', payload: deadline });
+      // 캘린더에서 등록한 일정이 마감 임박 목록에도 반영되도록 갱신
+      const upcoming = await deadlineService.getUpcoming(3);
+      dispatch({ type: 'SET_UPCOMING', payload: upcoming });
       return deadline;
     } catch (err) {
       dispatch({ type: 'SET_ERROR', payload: err.message });
@@ -82,9 +107,19 @@ export function DeadlineProvider({ children }) {
     }
   }, []);
 
+  const deleteDeadline = useCallback(async (id) => {
+    try {
+      await deadlineService.delete(id);
+      dispatch({ type: 'REMOVE_DEADLINE', payload: id });
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', payload: err.message });
+      throw err;
+    }
+  }, []);
+
   return (
     <DeadlineContext.Provider
-      value={{ ...state, loadDeadlines, loadUpcoming, createDeadline, toggleComplete }}
+      value={{ ...state, loadDeadlines, loadUpcoming, createDeadline, toggleComplete, deleteDeadline }}
     >
       {children}
     </DeadlineContext.Provider>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDeadline } from '../../hooks/useDeadline';
 import {
@@ -23,11 +23,7 @@ export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [showDayModal, setShowDayModal] = useState(false);
-  const { deadlines, loadDeadlines } = useDeadline();
-
-  useEffect(() => {
-    loadDeadlines();
-  }, [loadDeadlines]);
+  const { deadlines } = useDeadline();
 
   const days = useMemo(() => getCalendarDays(currentDate), [currentDate]);
 

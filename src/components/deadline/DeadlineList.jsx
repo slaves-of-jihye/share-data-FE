@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useDeadline } from '../../hooks/useDeadline';
 import DeadlineCard from './DeadlineCard';
 import { Clock, CheckCircle } from 'lucide-react';
@@ -9,11 +8,7 @@ import './Deadline.css';
  * 3일 이내 마감 과제를 표시합니다.
  */
 export default function DeadlineList() {
-  const { upcomingDeadlines, loadUpcoming } = useDeadline();
-
-  useEffect(() => {
-    loadUpcoming(3);
-  }, [loadUpcoming]);
+  const { upcomingDeadlines } = useDeadline();
 
   return (
     <div className="deadline-section" id="deadline-list">
